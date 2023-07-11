@@ -1,0 +1,148 @@
+
+version: "2"
+
+services:
+
+  service-registry:
+    build: ServiceRegistry/
+    container_name: service-registry
+    restart: always
+    network_mode: "host"
+    hostname: localhost
+    ports:
+      - 8761:8761
+
+  config-server:
+    build: ConfigServer/
+    container_name: config-server
+    restart: always
+    network_mode: "host"
+    hostname: localhost
+    ports:
+      - 8085:8085
+
+  api-gateway:
+    build: ApiGateway/
+    container_name: api-gateway
+    depends_on:
+      - config-server
+      - service-registry
+    restart: always
+    network_mode: "host"
+    hostname: localhost
+    ports:
+      - 8084:8084
+
+
+
+  mongodb-user:
+    image: mongo:latest
+    container_name: "mongodb-user"
+    hostname: localhost
+    ports:
+      - 27017:27017
+    volumes:
+      - /db/mongo:/data/db
+
+  #rabbitmq:
+   # image: rabbitmq:3-management
+   # container_name: rabbitmq
+   # ports:
+   #   - 15672:15672
+   #   - 5672:5672
+
+  mysql-user:
+    container_name: "mysql-user"
+    image: mysql
+    hostname: localhost
+    ports:
+      - 3306:3306
+    environment:
+      - MYSQL_USERNAME=root
+      - MYSQL_PASSWORD=root
+    volumes:
+      - ./my-db2:/var/lib/mysql
+
+
+ # neo4j-user:
+  #  container_name: "neo4j-user"
+  #  image: neo4j
+  #  hostname: localhost
+  #  ports:
+   #   - 7474:7474
+    #  - 7687:7687
+
+
+
+ # elasticsearch:
+   # image: docker.elastic.co/elasticsearch/elasticsearch:7.5.2
+   # container_name: elasticsearch
+   # environment:
+   #   - node.name=elasticsearch
+   #   - cluster.name=elasticsearch
+    #  - discovery.type=single-node
+    #  - bootstrap.memory_lock=true
+    #  - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+   # ports:
+    #  - 9200:9200
+    #  - 9300:9300
+
+  hotel-service:
+    build: HotelService/
+    container_name: hotel-service
+    network_mode: "host"
+    hostname: localhost
+    ports:
+      - 8082:8082
+   # depends_on:
+   #   - mongodb-user
+
+
+  rating-service:
+    build: RatingService/
+    container_name: rating-service
+    network_mode: "host"
+    hostname: localhost
+    ports:
+      - 8083:8083
+    depends_on:
+      - mongodb-user
+   # depends_on:
+   #   - elasticsearch
+
+   #   - eureka-server
+    #  - rabbitmq
+
+
+  user-service:
+    build: UserService/
+    container_name: user-service
+    network_mode: "host"
+    hostname: localhost
+    ports:
+      - 8081:8081
+    depends_on:
+      - mysql-user
+
+  postgres:
+    container_name: postgres_container
+    image: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      PGDATA: /data/postgres
+    volumes:
+      - postgres:/data/postgres
+    ports:
+      - "5432:5432"
+    networks:
+      - postgres
+    restart: unless-stopped
+
+
+networks:
+  postgres:
+    driver: bridge
+
+volumes:
+  postgres:
